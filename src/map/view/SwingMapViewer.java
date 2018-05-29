@@ -93,7 +93,7 @@ public class SwingMapViewer extends JFrame implements DataChangedListener, Actio
 
 	public SwingMapViewer(/*List<TilesManager> tilesManagers*/) {
 		super("Map Extractor");
-		setSize(800, 600);
+		setSize(1200, 800);
 		
 		editionTrace = new ArrayList<GpxPoint>();
 		editionDialog = new EditionDialog(this, editionTrace, this);

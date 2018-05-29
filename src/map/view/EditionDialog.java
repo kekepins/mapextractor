@@ -29,6 +29,8 @@ import javax.swing.event.ListSelectionListener;
 
 import map.altitude.AltitudeService;
 import map.altitude.AltitudeService2;
+import map.altitude.AltitudeServiceInterface;
+import map.altitude.OsmAltitudeService;
 import map.model.GpxPoint;
 
 @SuppressWarnings("serial")
@@ -43,6 +45,7 @@ public class EditionDialog extends JDialog implements EditionPointAddedListener,
 	private JMapViewer mapViewer;
 	private JList<GpxPoint> listPoints;
 	private List<GpxPoint> editionTrace;
+	private AltitudeServiceInterface altitudeService = new OsmAltitudeService();
 	
 	private DataChangedListener dataChangedListener;
 	
@@ -244,12 +247,27 @@ public class EditionDialog extends JDialog implements EditionPointAddedListener,
 			}
 		} else if (ACTION_CALC_DENIV.equals(command)) {
 			//AltitudeService.computeAltitude(editionTrace);
-			AltitudeService2.computeAltitude(editionTrace);
+			//AltitudeService2.computeAltitude(editionTrace);
+			
+			try {
+				editionTrace = altitudeService.computeAltitude(editionTrace);
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+			
 			this.repaint();
 		}
 		else if ( ACTION_ELEVATION_CHART.equals(command)) {
 			// First compute altitude
-			AltitudeService2.computeAltitude(editionTrace);
+			//AltitudeService2.computeAltitude(editionTrace);
+			
+			try {
+				editionTrace = altitudeService.computeAltitude(editionTrace);
+			} catch (IOException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
 			
 			
 			ElevationChart chart = new ElevationChart(editionTrace);
