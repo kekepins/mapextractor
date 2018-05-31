@@ -7,23 +7,26 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Insets;
 import java.awt.Point;
-import java.awt.Rectangle;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JSlider;
+import javax.swing.SwingWorker;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import map.conf.Configuration;
+import map.gps.GpsUtility;
 import map.model.GpsPoint;
 import map.model.GpxPoint;
 import map.model.TileInfo;
@@ -54,11 +57,12 @@ public class JMapViewer extends JPanel {
     private List<TilesProvider> tilesProviders;
     private TilesProvider currentTilesProvider;
     
+    private Map<String, SwingWorker> loadImgInProgress = new ConcurrentHashMap<>(); 
+    
  	/**
 	 * Vectors for clock-wise tile painting
 	 */
-	protected static final Point[] move = { new Point(1, 0), new Point(0, 1),
-			new Point(-1, 0), new Point(0, -1) };
+	protected static final Point[] move = { new Point(1, 0), new Point(0, 1), new Point(-1, 0), new Point(0, -1) };
 
 
 	private List<GpxPoint> gpsTrace;
@@ -80,7 +84,7 @@ public class JMapViewer extends JPanel {
 	private boolean downloadTiles;
 
 	// private ScaleBar scaleBar;
-	private ScaleBar2 scaleBar;
+	private ScaleBar scaleBar;
 	
 	private GpsPoint nearestPoint;
 
@@ -121,7 +125,7 @@ public class JMapViewer extends JPanel {
 		downloadTiles = false;
 		setLayout(null);
 		initializeZoomSlider();
-		scaleBar = new ScaleBar2(Color.black);
+		scaleBar = new ScaleBar(Color.black);
 		scaleBar.setLocation(10, 30);
 		gpsTraceColor 	= Color.red;
 		editTraceColor 	= Color.green;
@@ -233,12 +237,12 @@ public class JMapViewer extends JPanel {
 	}
 
 
-
+	/*
 	public Point2D.Double getPosition() {
 		double lon = GpsUtility.XToLon(center.x, zoom);
 		double lat = GpsUtility.YToLat(center.y, zoom);
 		return new Point2D.Double(lat, lon);
-	}
+	}*/
 
 	public Point2D.Double getPosition(Point mapPoint) {
 		int x = center.x + mapPoint.x - getWidth() / 2;
@@ -306,6 +310,89 @@ public class JMapViewer extends JPanel {
 	}
 	
 	private void drawTiles(Graphics graphic) {
+		final int maxTileWidthCount = (getWidth() / TILE_SIZE) + 2;
+	    final int maxTileHeightCount = (getHeight() / TILE_SIZE) + 2;
+	    
+	    
+		// Pixels Limits from -TILE_SIZE to width or Height
+		int centerTileX = center.x / TILE_SIZE;
+		int centerTileY = center.y / TILE_SIZE;
+		
+		int startTileX = centerTileX - (maxTileWidthCount/2);
+		int startTileY = centerTileY - (maxTileHeightCount/2);
+		
+		// Offset du centre en pixel
+		int offsetXPixel = (center.x % TILE_SIZE);
+		int offsetYPixel = (center.y % TILE_SIZE);
+
+		int centerPosXPixel = (getWidth() / 2) - offsetXPixel;
+		int centerPosYPixel = (getHeight() / 2) - offsetYPixel;
+
+		
+		for ( int idx = startTileX; idx < startTileX + maxTileWidthCount; idx++) {
+			for ( int idy = startTileY; idy < startTileY + maxTileHeightCount; idy++) {
+				
+				int currentPosXPixel = getPosPixel(centerTileX, centerPosXPixel, idx);
+				int currentPosYPixel = getPosPixel(centerTileY, centerPosYPixel, idy);
+				
+				// Is the tile access on local ?
+				TileInfo tile =  this.currentTilesProvider.getTileLocally(idx, idy, zoom);
+				
+				if ( tile != null ) {
+					System.out.println("drawImage (local) " + tile.getTileX()+ ":" + tile.getTileY() + " In " + currentPosXPixel + ":"+ currentPosYPixel);
+					graphic.drawImage(tile.getImage(), currentPosXPixel, currentPosYPixel, null);
+				}
+				else if (  isDownloadTiles() ){
+					System.out.println("image not in local launch thread " + idy+ ":" + idy );
+					
+					graphic.drawImage(LOADING_IMAGE, currentPosXPixel, currentPosYPixel, null);
+					
+					String key = idx + "_" + idy + "_" + zoom;
+					if ( !loadImgInProgress.containsKey( key)) {
+						final int tileX = idx;
+						final int tileY = idy;
+
+						SwingWorker<TileInfo, Void> worker = new SwingWorker<TileInfo, Void>() {
+
+			                @Override
+			                protected TileInfo doInBackground() throws Exception {
+			                    return getTile(tileX, tileY, zoom, false);
+			                }
+
+			                protected void done() {
+			                	TileInfo tileInfo;
+			                    try {
+			                    	tileInfo = get();
+			                    	loadImgInProgress.remove(tileInfo.getTileX() + "_" + tileInfo.getTileY() + "_" + tileInfo.getZoomLevel());
+			                        revalidate();
+			                        repaint();
+
+			                    } catch (Exception e) {
+			                        e.printStackTrace();
+			                    }
+			                }
+			            };
+			            
+			            loadImgInProgress.put(key, worker);
+			            worker.execute();
+					}
+				}
+				
+				if (isTileGridVisible) {
+
+					graphic.drawRect(currentPosXPixel, currentPosYPixel, TILE_SIZE, TILE_SIZE);
+					String tileInfo = "" + idx + "*" + idy;
+					graphic.drawChars(tileInfo.toCharArray(), 0, tileInfo.length(), currentPosXPixel + 5, currentPosYPixel + 12);
+				}
+			}
+		}
+	}
+	
+	private int getPosPixel(int centerTile, int centerPixel, int tile) {
+		return centerPixel  + (tile - centerTile) * TILE_SIZE; 
+	}
+	
+	private void drawTiles2(Graphics graphic) {
 		int iMove = 0;
 
 		// Dans quel tile se trouve le centre ?
@@ -316,9 +403,9 @@ public class JMapViewer extends JPanel {
 		int offsetXPixel = (center.x % TILE_SIZE);
 		int offsetYPixel = (center.y % TILE_SIZE);
 
-		System.out.println("Center " + center.x + ":" + center.y);
+		/*System.out.println("Center " + center.x + ":" + center.y);
 		System.out.println("currentTileX " + currentTileX + ";currentTileY " + currentTileY + ";offx " + offsetXPixel + ";offy "
-				+ offsetYPixel);
+				+ offsetYPixel);*/
 
 		int currentPosXPixel = (getWidth() / 2) - offsetXPixel;
 		int currentPosYPixel = (getHeight() / 2) - offsetYPixel;
@@ -375,6 +462,7 @@ public class JMapViewer extends JPanel {
 
 							painted = true;
 							//BufferedImage image = tile.getImage();
+							System.out.println("drawImage " + tile.getTileX()+ ":" + tile.getTileY() + " In " + currentPosXPixel + ":"+ currentPosYPixel);
 							graphic.drawImage(tile.getImage(), currentPosXPixel, currentPosYPixel, null);
 						}
 
@@ -698,11 +786,6 @@ public class JMapViewer extends JPanel {
 	    
 	    
 		// Pixels Limits from -TILE_SIZE to width or Height
-		/*int xMinPixel = -TILE_SIZE;
-		int yMinPixel = -TILE_SIZE;
-		int xMaxPixel = getWidth();
-		int yMaxPixel = getHeight();*/
-		
 		int centerTileX = center.x / TILE_SIZE;
 		int centerTileY = center.y / TILE_SIZE;
 		
@@ -713,7 +796,7 @@ public class JMapViewer extends JPanel {
 			for ( int idy = startTileY; idy < startTileY + maxTileHeightCount; idy++) {
 				System.out.println(idx  + ":" + idy);
 				
-				TileInfo tile = getTile(idx, idy, zoom, true);
+				getTile(idx, idy, zoom, true);
 			}
 		}
 

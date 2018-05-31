@@ -1,7 +1,5 @@
 package map.view;
 
-import gpx2.GpxDecoder;
-
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -36,6 +34,9 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 
 import map.conf.Configuration;
 import map.export.ExportUtils;
+import map.gps.GpsReducer;
+import map.gps.GpsUtility;
+import map.gps.GpxDecoder;
 import map.model.GpsPoint;
 import map.model.GpxPoint;
 import map.sql.SQLLiteUtils;
@@ -91,7 +92,7 @@ public class SwingMapViewer extends JFrame implements DataChangedListener, Actio
 	
 	private EditionDialog editionDialog;
 
-	public SwingMapViewer(/*List<TilesManager> tilesManagers*/) {
+	public SwingMapViewer() {
 		super("Map Extractor");
 		setSize(1200, 800);
 		
@@ -106,7 +107,6 @@ public class SwingMapViewer extends JFrame implements DataChangedListener, Actio
 		double longitude = 5.817448;
 		
 		map.setDisplayPositionByLatLon(latitude, longitude, zoomLevel);
-		//map.setTilesManager(/*tilesManagers.get(0)*/);
 		
 		setLayout(new BorderLayout());
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -202,7 +202,7 @@ public class SwingMapViewer extends JFrame implements DataChangedListener, Actio
 		add(infoPanel, BorderLayout.EAST);
 	}
 	
-	private void constructTools(JPanel menuPanel/*, List<TilesManager> tilesManagers*/) {
+	private void constructTools(JPanel menuPanel) {
 		menuPanel.setLayout(new BorderLayout());
 		JLabel appIMg = new JLabel( new ImageIcon(getClass().getResource("images/map.png")), JLabel.LEFT);
 		appIMg.setPreferredSize(new Dimension(90,100));
@@ -466,6 +466,9 @@ public class SwingMapViewer extends JFrame implements DataChangedListener, Actio
 		if ( proxy != null && proxyPort != null) {
 			System.setProperty("http.proxyHost", proxy);
 		    System.setProperty("http.proxyPort", proxyPort);
+			System.setProperty("https.proxyHost", proxy);
+		    System.setProperty("https.proxyPort", proxyPort);
+
 		}
 		
 		List<TilesManager> tilesManagers = config.getTilesManagers();

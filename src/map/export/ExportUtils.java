@@ -1,7 +1,5 @@
 package map.export;
 
-import gpx2.GpxDecoder;
-
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Graphics2D;
@@ -15,6 +13,7 @@ import java.util.Map;
 import javax.imageio.ImageIO;
 
 import map.conf.Configuration;
+import map.gps.GpxDecoder;
 import map.model.GpsPoint;
 import map.model.GpxPoint;
 import map.model.TileInfo;

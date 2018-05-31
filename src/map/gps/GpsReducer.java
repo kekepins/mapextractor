@@ -1,6 +1,4 @@
-package map.view;
-
-import gpx2.GpxDecoder;
+package map.gps;
 
 import java.io.File;
 import java.util.ArrayList;

@@ -1,7 +1,5 @@
 package map.sql;
 
-import gpx2.GpxDecoder;
-
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -24,12 +22,13 @@ import java.util.Locale;
 import javax.imageio.ImageIO;
 
 import map.conf.Configuration;
+import map.gps.GpsUtility;
+import map.gps.GpxDecoder;
 import map.model.GpsPoint;
 import map.model.GpxPoint;
 import map.model.TileInfo;
 import map.tilemanager.TilesManager;
 import map.tilemanager.TilesProvider;
-import map.view.GpsUtility;
 
 public class SQLLiteUtils {
 

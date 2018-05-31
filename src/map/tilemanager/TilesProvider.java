@@ -6,9 +6,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import map.gps.GpsUtility;
 import map.model.GpxPoint;
 import map.model.TileInfo;
-import map.view.GpsUtility;
 
 public class TilesProvider {
 	
@@ -61,14 +61,22 @@ public class TilesProvider {
 				tileInfo = extManager.getTileInfo(xTile, yTile, zoomLevel);
 				
 				if ( tileInfo.hasImage()) {
+					System.out.println("Tile load from internet " + xTile + ":" + yTile + " save in local (db)");
 					localManager.save(tileInfo);
 				}
+			}
+			else {
+				System.out.println("Tile " + xTile + ":" + yTile + " not in local (db)");
 			}
 			
 			// Add in cache			
 			if (tileInfo.hasImage()) {
+				System.out.println("Add Tile " + xTile + ":" + yTile + " in cache");
 				cacheTiles.put(getKey(xTile, yTile), tileInfo);
 			}
+		}
+		else {
+			System.out.println("Tile " + xTile + ":" + yTile + " in cache");
 		}
 		
 		return tileInfo;
@@ -96,6 +104,20 @@ public class TilesProvider {
 		
 		return tiles;
 		
+	}
+	
+	public TileInfo getTileLocally(int xTile, int yTile, int zoomLevel) {
+		TileInfo tileInfo = cacheTiles.get(getKey(xTile, yTile));
+		
+		if ( tileInfo == null ) {
+			tileInfo = localManager.getTileInfo(xTile, yTile, zoomLevel);
+		}
+		
+		if ( !tileInfo.hasImage()) {
+			return null;
+		}
+		
+		return tileInfo;
 	}
 	
 	public Collection<TileInfo> getAllTilesToDisplay(List<GpxPoint> points, int zoomLevel, boolean downloadTiles) {

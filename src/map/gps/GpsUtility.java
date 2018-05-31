@@ -1,8 +1,6 @@
-package map.view;
+package map.gps;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import map.model.GpsPoint;
 import map.model.GpxPoint;

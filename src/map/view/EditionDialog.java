@@ -1,8 +1,7 @@
 package map.view;
 
-import gpx2.GpxDecoder;
-
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Frame;
@@ -27,10 +26,9 @@ import javax.swing.ListSelectionModel;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
-import map.altitude.AltitudeService;
-import map.altitude.AltitudeService2;
 import map.altitude.AltitudeServiceInterface;
 import map.altitude.OsmAltitudeService;
+import map.gps.GpxDecoder;
 import map.model.GpxPoint;
 
 @SuppressWarnings("serial")
@@ -198,13 +196,23 @@ public class EditionDialog extends JDialog implements EditionPointAddedListener,
 			left.setText(leftData);
 			middle.setText(middleData);
 			right.setText(rightData);
+			
 			if (isSelected) {
-				left.setBackground(list.getSelectionBackground());
+				/*left.setBackground(list.getSelectionBackground());
 				left.setForeground(list.getSelectionForeground());
 				middle.setBackground(list.getSelectionBackground());
 				middle.setForeground(list.getSelectionForeground());
 				right.setBackground(list.getSelectionBackground());
 				right.setForeground(list.getSelectionForeground());
+				*/
+				//super.setBackground(Color.RED);
+				left.setBackground(Color.RED);
+				left.setForeground(list.getSelectionForeground());
+				middle.setBackground(Color.RED);
+				middle.setForeground(list.getSelectionForeground());
+				right.setBackground(Color.RED);
+				right.setForeground(list.getSelectionForeground());
+				
 			} else {
 				left.setBackground(list.getBackground());
 				left.setForeground(list.getForeground());

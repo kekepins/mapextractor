@@ -13,8 +13,10 @@ import org.jfree.data.xy.XYDataset;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
+import map.gps.GpsUtility;
 import map.model.GpxPoint;
 
+@SuppressWarnings("serial")
 public class ElevationChart extends JFrame {
 	
 	public ElevationChart(List<GpxPoint> editionTrace) {
