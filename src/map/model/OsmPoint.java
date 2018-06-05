@@ -1,4 +1,4 @@
-package map.altitude;
+package map.model;
 
 public class OsmPoint {
 	private double latitude;

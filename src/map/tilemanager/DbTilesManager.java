@@ -72,7 +72,7 @@ public class DbTilesManager extends TilesManager {
 		
 	}
 	
-	public static void main(String[] args) {
+	/*public static void main(String[] args) {
 		try {
 			DbTilesManager localTilesManager = new DbTilesManager("C:\\dev\\test\\map\\tiles1413548429251.db", "OSM", "png");
 			TileInfo tileInfo = localTilesManager.getTileInfo(1057, 734, 11);
@@ -88,7 +88,7 @@ public class DbTilesManager extends TilesManager {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-	}
+	}*/
 	
 	public Connection getConnection() {
 		return this.tilesDBconnection;

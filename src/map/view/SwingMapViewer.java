@@ -5,16 +5,18 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Image;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.io.File;
 import java.sql.Connection;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.swing.AbstractButton;
 import javax.swing.BorderFactory;
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -25,6 +27,7 @@ import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JTextField;
 import javax.swing.JToggleButton;
 import javax.swing.JToolBar;
 import javax.swing.UIManager;
@@ -82,7 +85,7 @@ public class SwingMapViewer extends JFrame implements DataChangedListener, Actio
 	private JLabel edtionDistanceLabel;
 	
 	// Toolbar 
-	private JToggleButton btnDrawGps;
+	private AbstractButton btnDrawGps;
 	
 	private JColorComboBox chooseColorGpscomboBox;
 	private JColorComboBox chooseColorEditcomboBox;
@@ -93,8 +96,8 @@ public class SwingMapViewer extends JFrame implements DataChangedListener, Actio
 	private EditionDialog editionDialog;
 
 	public SwingMapViewer() {
-		super("Map Extractor");
-		setSize(1200, 800);
+		super("Map Toolbox");
+		setSize(1100, 900);
 		
 		editionTrace = new ArrayList<GpxPoint>();
 		editionDialog = new EditionDialog(this, editionTrace, this);
@@ -117,21 +120,75 @@ public class SwingMapViewer extends JFrame implements DataChangedListener, Actio
 		add(buttomPanel, BorderLayout.SOUTH);
 		add(map, BorderLayout.CENTER);
 		
-		constructInfoView();
+		constructRightPanel();
 		constructTools(menuPanel);
 		
 		infoLabel = new JLabel("");
 		buttomPanel.add(infoLabel);
 	}
 	
-	private void constructInfoView() {
+	private void constructRightPanel() {
 		// Add info data
 		JPanel infoPanel = new JPanel();
 		infoPanel.setPreferredSize(new Dimension(150, 500));
 		infoPanel.setBorder(BorderFactory.createEmptyBorder(3, 3, 3, 3));
 		
+		Font biggerFont = infoPanel.getFont();
+		biggerFont = biggerFont.deriveFont(Font.BOLD, biggerFont.getSize2D() + 2.0f);
+
 		
+		// tiles panel
+		JPanel tilesPanel = new JPanel();
+		tilesPanel.setLayout(new BoxLayout(tilesPanel, BoxLayout.Y_AXIS));
+		tilesPanel.setPreferredSize(new Dimension(130, 200));
+		tilesPanel.setBorder(BorderFactory.createCompoundBorder(
+				BorderFactory.createEtchedBorder(EtchedBorder.LOWERED), BorderFactory.createEmptyBorder(3, 3, 3, 3))
+			);
+		
+		JLabel tilesLabel = new JLabel("Tiles");
+		tilesLabel.setMinimumSize(new Dimension(120, 20));
+		tilesLabel.setFont(biggerFont);
+		tilesPanel.add(tilesLabel);
+		tilesPanel.add(Box.createVerticalStrut(10)); // Fixed width invisible separator.
+
+		tilesPanel.add(tilesLabel);
+		tilesPanel.add(Box.createVerticalStrut(10)); // Fixed width invisible separator.
+		
+		List<String> tileTypes = Configuration.getConfiguration().getTileTypes();
+		JComboBox<String> tilesManagerSelector = new JComboBox<String>(tileTypes.toArray(new String[tileTypes.size()]));
+		tilesManagerSelector.addItemListener(new ItemListener() {
+			public void itemStateChanged(ItemEvent e) {
+				map.setTileType((String) e.getItem());
+			}
+		});
+		tilesManagerSelector.setPreferredSize(new Dimension(30, 30));
+		tilesPanel.add(tilesManagerSelector);
+
+		
+		AbstractButton btnDrawRectangle = getImageButton("images/rectangle.png", 25, 25, true);
+		btnDrawRectangle.setToolTipText("Visible tile rectangle");
+		btnDrawRectangle.setActionCommand(ACTION_GRID_VISIBLE);
+		btnDrawRectangle.addActionListener( this );
+		tilesPanel.add(btnDrawRectangle);
+		
+		AbstractButton btnLoadTiles = getImageButton("images/internet.png", 25, 25, true);
+		btnLoadTiles.setToolTipText("Load tiles from internet");
+		btnLoadTiles.setActionCommand(ACTION_LOAD_TILES);
+		btnLoadTiles.addActionListener( this );
+		tilesPanel.add(btnLoadTiles);
+		
+		
+		AbstractButton btnRefreshImage = getImageButton("images/view_refresh.png", 25, 25, false);
+		btnRefreshImage.setToolTipText("Refresh visible tiles");
+		btnRefreshImage.setActionCommand(ACTION_VISIBLE_TILES);
+		btnRefreshImage.addActionListener( this );
+		tilesPanel.add(btnRefreshImage);
+
+		infoPanel.add(tilesPanel);
+		
+		//----------------
 		// Trace gps info
+		//---------------
 		JPanel traceGpsInfoPanel = new JPanel();
 		traceGpsInfoPanel.setLayout(new BoxLayout(traceGpsInfoPanel, BoxLayout.Y_AXIS));
 		traceGpsInfoPanel.setPreferredSize(new Dimension(130, 200));
@@ -139,15 +196,31 @@ public class SwingMapViewer extends JFrame implements DataChangedListener, Actio
 				BorderFactory.createEtchedBorder(EtchedBorder.LOWERED), BorderFactory.createEmptyBorder(3, 3, 3, 3))
 			);
 		
-		JLabel trackDetailsLabel = new JLabel("Trace GPS");
+		JLabel trackDetailsLabel = new JLabel("Gpx track");
 		trackDetailsLabel.setMinimumSize(new Dimension(120, 20));
-		Font biggerFont = trackDetailsLabel.getFont();
-		biggerFont = biggerFont.deriveFont(Font.BOLD, biggerFont.getSize2D() + 2.0f);
 		trackDetailsLabel.setFont(biggerFont);
 		traceGpsInfoPanel.add(trackDetailsLabel);
 		traceGpsInfoPanel.add(Box.createVerticalStrut(10)); // Fixed width invisible separator.
+		
+		//btnDrawGps = new JToggleButton( new ImageIcon(getClass().getResource("images/draw-gps.png")));
+		
+		//JButton btnDeniv = new JButton( new ImageIcon(getClass().getResource("images/deniv.png")));
+		
+		AbstractButton btnLoadGps = getImageButton("images/open2.png", 25, 25, false);
+		btnLoadGps.setToolTipText("Load Gpx");
+		btnLoadGps.setActionCommand(ACTION_LOAD_GPS);
+		btnLoadGps.addActionListener( this );
+		traceGpsInfoPanel.add(btnLoadGps);
+		
+		AbstractButton btnDeniv = getImageButton("images/deniv.png", 25, 25, false);
+		btnDeniv.setToolTipText("Track altitude");
+		btnDeniv.setActionCommand(ACTION_TRACE_DENIV);
+		btnDeniv.addActionListener( this );
+		traceGpsInfoPanel.add(btnDeniv);
+
+		
 		infoPanel.add(traceGpsInfoPanel);
-		filenameLabel = new JLabel("Pas de fichier chargé");
+		filenameLabel = new JLabel("No file loaded");
 		filenameLabel.setMinimumSize(new Dimension(120, 20));
 		traceGpsInfoPanel.add(filenameLabel);
 		
@@ -165,10 +238,13 @@ public class SwingMapViewer extends JFrame implements DataChangedListener, Actio
 		chooseColorGpscomboBox.setSelectedColor(Color.red);
 		chooseColorGpscomboBox.setActionCommand(ACTION_GPS_COLOR_CHANGED);
 		chooseColorGpscomboBox.addActionListener( this );
+		
+	
 	    traceGpsInfoPanel.add(chooseColorGpscomboBox);
 
-		
-		// Edition infos 
+	    //--------------
+		// Edition infos
+	    //--------------
 		JPanel editionGpsInfoPanel = new JPanel();
 		editionGpsInfoPanel.setLayout(new BoxLayout(editionGpsInfoPanel, BoxLayout.Y_AXIS));
 
@@ -182,7 +258,30 @@ public class SwingMapViewer extends JFrame implements DataChangedListener, Actio
 		editionDetailsLabel.setFont(biggerFont);
 		editionGpsInfoPanel.add(editionDetailsLabel);
 		editionGpsInfoPanel.add(Box.createVerticalStrut(10)); // Fixed width invisible separator.
-		editionPointsCountLabel = new JLabel("Pas en mode édition");
+		
+		//JToggleButton btnEditionGps = new JToggleButton( new ImageIcon(getClass().getResource("images/edit.png")));
+		AbstractButton btnEditionGps = getImageButton("images/edit.png", 25, 25, true);
+		btnEditionGps.setToolTipText("Edition mode");
+		btnEditionGps.setActionCommand(ACTION_EDITION_MODE);
+		btnEditionGps.addActionListener( this );
+		editionGpsInfoPanel.add(btnEditionGps);
+		
+		btnDrawGps = getImageButton("images/draw-gps.png", 25, 25, true);
+		btnDrawGps.setToolTipText("Show Gpx Track");
+		btnDrawGps.setActionCommand(ACTION_SHOW_GPS);
+		btnDrawGps.addActionListener( this );
+		
+		editionGpsInfoPanel.add(btnDrawGps);
+		
+		AbstractButton btnExportImage = getImageButton("images/export_img.png", 25, 25, false);
+		btnExportImage.setToolTipText("Export track as image");
+		btnExportImage.setActionCommand(ACTION_EXPORT_TRACE_AS_IMG);
+		btnExportImage.addActionListener( this );
+		editionGpsInfoPanel.add(btnExportImage);
+		
+		editionGpsInfoPanel.add(Box.createVerticalStrut(10)); // Fixed width invisible separator.
+
+		editionPointsCountLabel = new JLabel("Not in edition mode");
 		editionPointsCountLabel.setMinimumSize(new Dimension(120, 20));
 		editionPointsCountLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 		editionGpsInfoPanel.add(editionPointsCountLabel);
@@ -204,27 +303,49 @@ public class SwingMapViewer extends JFrame implements DataChangedListener, Actio
 	
 	private void constructTools(JPanel menuPanel) {
 		menuPanel.setLayout(new BorderLayout());
-		JLabel appIMg = new JLabel( new ImageIcon(getClass().getResource("images/map.png")), JLabel.LEFT);
+		/*JLabel appIMg = new JLabel( new ImageIcon(getClass().getResource("images/map.png")), JLabel.LEFT);
 		appIMg.setPreferredSize(new Dimension(90,100));
-		menuPanel.add(appIMg, BorderLayout.WEST);
+		menuPanel.add(appIMg, BorderLayout.WEST);*/
 		
 		JPanel actionPanel = new JPanel(new BorderLayout());
 		menuPanel.add(actionPanel);
+		
+		JLabel label = new JLabel( new ImageIcon(getClass().getResource("images/title2.png")) );
+		label.setLayout( new BorderLayout() );
+		actionPanel.add(label, BorderLayout.WEST);
+		actionPanel.add(Box.createVerticalStrut(10), BorderLayout.SOUTH);
+		//menuPanel.add(Box.createVerticalStrut(10)); // Fixed width invisible separator.
+		
 			
-		JLabel titleLabel = new JLabel("GPS toolbox", JLabel.LEFT );
+		/*JTextField textField = new JTextField(10);
+		textField.setOpaque( false );
+		textField.setText("Map toolbox");
+		//JLabel label = new JLabel( new ImageIcon(getClass().getResource("images/titleback.png")) );
+		JLabel label = new JLabel( new ImageIcon(getClass().getResource("images/map.png")) );
+		label.setLayout( new BorderLayout() );
+		label.add( textField );
+		*/
+		
+		
+		/*JLabel background1 = new JLabel(new ImageIcon(getClass().getResource("images/titleback.png")));
+
+		background1.setText("Map toolbox");
+		JFrame frame = new JFrame();     
+		frame.add(background1); 
+		frame.pack();
+		frame.setResizable(false);     
+		frame.setVisible(true);     
+		
+		actionPanel.add(background1);
+		*/
+		
+		/*JLabel titleLabel = new JLabel("Map toolbox", JLabel.LEFT );
 		titleLabel.setFont(new Font(titleLabel.getFont().getName(), Font.BOLD, 22));
 		actionPanel.add(titleLabel, BorderLayout.CENTER );
-		
-		JToolBar toolBar = new JToolBar();
-		
-		/*JComboBox<TilesManager> tilesManagerSelector = new JComboBox<TilesManager>(tilesManagers.toArray(new TilesManager[tilesManagers.size()]));
-		tilesManagerSelector.addItemListener(new ItemListener() {
-			public void itemStateChanged(ItemEvent e) {
-				map.setTilesManager((TilesManager) e.getItem());
-			}
-		});
 		*/
-		List<String> tileTypes = Configuration.getConfiguration().getTileTypes();
+		
+		//JToolBar toolBar = new JToolBar();
+		/*List<String> tileTypes = Configuration.getConfiguration().getTileTypes();
 				
 		JComboBox<String> tilesManagerSelector = new JComboBox<String>(tileTypes.toArray(new String[tileTypes.size()]));
 		tilesManagerSelector.addItemListener(new ItemListener() {
@@ -234,52 +355,59 @@ public class SwingMapViewer extends JFrame implements DataChangedListener, Actio
 		});
 		toolBar.add(tilesManagerSelector);
 		toolBar.addSeparator();
+		*/
 		
-		JButton btnLoadGps = new JButton( new ImageIcon(getClass().getResource("images/open2.png")));
-		btnLoadGps.setToolTipText("Charger fichier Gps");
+		/*JButton btnLoadGps = new JButton( new ImageIcon(getClass().getResource("images/open2.png")));
+		btnLoadGps.setToolTipText("Load Gpx");
 		btnLoadGps.setActionCommand(ACTION_LOAD_GPS);
 		btnLoadGps.addActionListener( this );
 		toolBar.add(btnLoadGps);
+		*/
 		
-		btnDrawGps = new JToggleButton( new ImageIcon(getClass().getResource("images/draw-gps.png")));
-		btnDrawGps.setToolTipText("Montrer Gps");
+		/*btnDrawGps = new JToggleButton( new ImageIcon(getClass().getResource("images/draw-gps.png")));
+		btnDrawGps.setToolTipText("Show Gpx Track");
 		btnDrawGps.setActionCommand(ACTION_SHOW_GPS);
 		btnDrawGps.addActionListener( this );
-		toolBar.add(btnDrawGps);
+		toolBar.add(btnDrawGps);*/
 		
-		JToggleButton btnEditionGps = new JToggleButton( new ImageIcon(getClass().getResource("images/edit.png")));
-		btnEditionGps.setToolTipText("Mode edition");
+		/*JToggleButton btnEditionGps = new JToggleButton( new ImageIcon(getClass().getResource("images/edit.png")));
+		btnEditionGps.setToolTipText("Edition mode");
 		btnEditionGps.setActionCommand(ACTION_EDITION_MODE);
 		btnEditionGps.addActionListener( this );
 		toolBar.add(btnEditionGps);
+		*/
 	
-		toolBar.addSeparator();
+		//toolBar.addSeparator();
 		
-		JToggleButton btnDrawRectangle = new JToggleButton( new ImageIcon(getClass().getResource("images/rectangle.png")), true);
-		btnDrawRectangle.setToolTipText("Rectangle visible");
+		/*JToggleButton btnDrawRectangle = new JToggleButton( new ImageIcon(getClass().getResource("images/rectangle.png")), true);
+		btnDrawRectangle.setToolTipText("Visible tile rectangle");
 		btnDrawRectangle.setActionCommand(ACTION_GRID_VISIBLE);
 		btnDrawRectangle.addActionListener( this );
-		toolBar.add(btnDrawRectangle);
+		toolBar.add(btnDrawRectangle);*/
 		
-		JToggleButton btnLoadTiles = new JToggleButton( new ImageIcon(getClass().getResource("images/internet.png")));
-		btnLoadTiles.setToolTipText("Charger les tuiles manquantes sur internet");
+		/*JToggleButton btnLoadTiles = new JToggleButton( new ImageIcon(getClass().getResource("images/internet.png")));
+		btnLoadTiles.setToolTipText("Load tiles from internet");
 		btnLoadTiles.setActionCommand(ACTION_LOAD_TILES);
 		btnLoadTiles.addActionListener( this );
 		toolBar.add(btnLoadTiles);
+		*/
 		
-		toolBar.addSeparator();
+		//toolBar.addSeparator();
 		
+		/*
 		JButton btnExportImage = new JButton( new ImageIcon(getClass().getResource("images/export_img.png")));
-		btnExportImage.setToolTipText("Exporter la trace sous forme d'image");
+		btnExportImage.setToolTipText("Export track as image");
 		btnExportImage.setActionCommand(ACTION_EXPORT_TRACE_AS_IMG);
 		btnExportImage.addActionListener( this );
 		toolBar.add(btnExportImage);
+		*/
 		
-		JButton btnRefreshImage = new JButton( new ImageIcon(getClass().getResource("images/view_refresh.png")));
+		/*JButton btnRefreshImage = new JButton( new ImageIcon(getClass().getResource("images/view_refresh.png")));
 		btnRefreshImage.setToolTipText("Refresh visible tiles");
 		btnRefreshImage.setActionCommand(ACTION_VISIBLE_TILES);
 		btnRefreshImage.addActionListener( this );
 		toolBar.add(btnRefreshImage);
+		*/
 
 		
 		/*
@@ -289,11 +417,11 @@ public class SwingMapViewer extends JFrame implements DataChangedListener, Actio
 		btnExportPdf.addActionListener( this );
 		toolBar.add(btnExportPdf);*/
 
-		JButton btnExportAndroid = new JButton( new ImageIcon(getClass().getResource("images/android.png")));
+		/*JButton btnExportAndroid = new JButton( new ImageIcon(getClass().getResource("images/android.png")));
 		btnExportAndroid.setToolTipText("Exporter les données vers Android");
 		btnExportAndroid.setActionCommand(ACTION_EXPORT_ANDROID);
 		btnExportAndroid.addActionListener( this );
-		toolBar.add(btnExportAndroid);
+		toolBar.add(btnExportAndroid);*/
 		/*
 		JButton btnExportAllAndroid = new JButton( new ImageIcon(getClass().getResource("images/android.png")));
 		btnExportAllAndroid.setToolTipText("Exporter toutes les données");
@@ -301,14 +429,15 @@ public class SwingMapViewer extends JFrame implements DataChangedListener, Actio
 		btnExportAllAndroid.addActionListener( this );
 		toolBar.add(btnExportAllAndroid);*/
 		
-		JButton btnDeniv = new JButton( new ImageIcon(getClass().getResource("images/deniv.png")));
-		btnDeniv.setToolTipText("Trace deniv");
+		/*JButton btnDeniv = new JButton( new ImageIcon(getClass().getResource("images/deniv.png")));
+		btnDeniv.setToolTipText("Track altitude");
 		btnDeniv.setActionCommand(ACTION_TRACE_DENIV);
 		btnDeniv.addActionListener( this );
 		toolBar.add(btnDeniv);
+		*/
 
 		
-		actionPanel.add(toolBar, BorderLayout.SOUTH);
+		//actionPanel.add(toolBar, BorderLayout.SOUTH);
 	}
 
 
@@ -364,7 +493,7 @@ public class SwingMapViewer extends JFrame implements DataChangedListener, Actio
 
 	@Override
 	public void actionPerformed(ActionEvent e) {
-		System.out.println("Action:" + e);
+		//System.out.println("Action:" + e);
 		String command = e.getActionCommand();
 		if (ACTION_GRID_VISIBLE.equals(command)) {
 			map.setTileGridVisible(!map.isTileGridVisible());
@@ -501,6 +630,18 @@ public class SwingMapViewer extends JFrame implements DataChangedListener, Actio
 			edtionDistanceLabel.setText(String.format("Distance : %.2f km", distance));
 		}
 
+	}
+	
+	private AbstractButton getImageButton(String imagePath, int width, int height, boolean toggle) {
+		Image imgRefresh = (new ImageIcon(getClass().getResource(imagePath))).getImage();  
+		Image newimg = imgRefresh.getScaledInstance( width, width,  java.awt.Image.SCALE_SMOOTH ) ;  
+		ImageIcon icon = new ImageIcon( newimg );
+		if ( toggle ) {
+			return new JToggleButton( icon );
+		}
+		else {
+			return  new JButton( icon );
+		}
 	}
 
 }

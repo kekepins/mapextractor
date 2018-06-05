@@ -13,6 +13,8 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import map.model.GpxPoint;
+import map.model.OsmPoint;
+import map.model.OsmResults;
 
 // https://github.com/Jorl17/open-elevation/blob/master/docs/api.md
 public class OsmAltitudeService implements AltitudeServiceInterface {
@@ -89,24 +91,14 @@ public class OsmAltitudeService implements AltitudeServiceInterface {
 		for (GpxPoint gpsPoint : gpsPoints ) {
 			url.append(gpsPoint.getLatitude() + "," + gpsPoint.getLongitude() + "|");
 		}
-		
-
 
 		url.deleteCharAt(url.length()-1);
-		
 		return url.toString();
 	}
 	
 	
 	
 	public static void main(String[] args ) throws IOException {
-		
-		System.setProperty("https.proxyHost", "websurfing1-tin1.esi.adp.com");
-        System.setProperty("https.proxyPort", "8080");
-
-
-		double latitude = 45.232221;
-		double longitude = 5.817448;
 		
 		List<GpxPoint> listPoints = new ArrayList<>();
 		
@@ -115,9 +107,6 @@ public class OsmAltitudeService implements AltitudeServiceInterface {
 		
 		OsmAltitudeService osmAltitudeService = new OsmAltitudeService();
 		osmAltitudeService.computeAltitude(listPoints);
-		
-		//System.out.println("alti " + altitude);
-
 	}
 
 }

@@ -1,4 +1,4 @@
-package map.altitude;
+package map.model;
 
 import java.util.List;
 
